@@ -1,0 +1,12 @@
+../Core/Src/main.c:88:5:main	1
+../Core/Src/main.c:160:6:SystemClock_Config	3
+../Core/Src/main.c:206:13:MX_USART2_UART_Init	2
+../Core/Src/main.c:239:13:MX_GPIO_Init	1
+../Core/Src/main.c:266:6:USART2_IRQHandler	5
+../Core/Src/main.c:286:6:time1	2
+../Core/Src/main.c:293:6:UART_send_byte	2
+../Core/Src/main.c:304:9:UART_is_buffer_empty	1
+../Core/Src/main.c:319:9:UART_read_byte	3
+../Core/Src/main.c:342:6:UART_send_byte_array	2
+../Core/Src/main.c:352:10:UART_bytes_to_read	2
+../Core/Src/main.c:370:6:Error_Handler	1
