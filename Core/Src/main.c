@@ -51,6 +51,7 @@ UART_HandleTypeDef huart2;
 uint16_t RxBuffer[RxBufferSize];
 uint32_t data_Rx = 0;
 uint32_t rx_data = 0;
+uint8_t buffer_size = 0;
 
 #define BUFFER_SIZE 256
 typedef struct UART_Buffer_Type{
@@ -64,7 +65,8 @@ volatile UART_Buffer_t UART_BufferTX;
 
 static int32_t UART_is_buffer_empty(volatile UART_Buffer_t* buffer);
 
-
+uint32_t deneme_Tx[5];
+uint8_t RXNE_value = 0;
 
 /* USER CODE END PV */
 
@@ -115,7 +117,7 @@ int main(void)
 
   //USART2->CR1 |= USART_CR1_RXNEIE;
 
-    SET_BIT(USART2->CR1, USART_CR1_TXEIE);
+    //SET_BIT(USART2->CR1, USART_CR1_TXEIE);
 
   /* 4- Enable UART Receive Data Register Not Empty */
    SET_BIT(USART2->CR1, USART_CR1_RXNEIE);
@@ -125,13 +127,7 @@ int main(void)
 	HAL_NVIC_SetPriority(USART2_IRQn,15 , 15);
 	HAL_NVIC_EnableIRQ(USART2_IRQn);
 
-	int __io_putchar(int ch)
-	{
-		UART_send_byte(ch);
-		  return ch;
-	}
-
-  /* USER CODE END 2 */
+	 /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -139,15 +135,52 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		HAL_GPIO_WritePin(LED15_GPIO_Port, LED15_Pin, GPIO_PIN_SET);
+		//HAL_GPIO_TogglePin(LED13_GPIO_Port,LED13_Pin);
+		/*HAL_GPIO_WritePin(LED15_GPIO_Port, LED15_Pin, GPIO_PIN_SET);
 		 HAL_Delay(500);
 		 HAL_GPIO_WritePin(LED15_GPIO_Port, LED15_Pin, GPIO_PIN_RESET);
-		 HAL_Delay(500);
+		 HAL_Delay(500);*/
 		// for(uint16_t i=0; i<50; i++){
 		//RxBuffer[i]='A';
 		// }
 		//data_Rx = USART2->DR;
-		//HAL_Delay(100);
+		 //HAL_Delay(100);
+		/*RXNE_value = USART2->SR & USART_SR_RXNE;
+		if (RXNE_value == 32) {
+			HAL_GPIO_WritePin(LED15_GPIO_Port, LED15_Pin, GPIO_PIN_RESET);
+			//HAL_GPIO_WritePin(LED14_GPIO_Port, LED14_Pin, GPIO_PIN_SET);
+			//deneme_Tx = USART2->DR;
+			//HAL_Delay(100);
+			while(USART2->SR & USART_SR_RXNE){
+				HAL_GPIO_WritePin(LED13_GPIO_Port,LED13_Pin, GPIO_PIN_SET);
+
+				//USART2->DR = 'K';
+				//HAL_Delay(100);
+				//deneme_Tx = USART2->DR;
+
+				//USART2->SR &=~(USART_SR_RXNE);
+
+				//USART2->CR1 |= USART_CR1_RXNEIE;
+
+			}
+
+			//HAL_GPIO_WritePin(LED12_GPIO_Port,LED12_Pin, GPIO_PIN_SET);
+
+			//deneme_Tx = USART2->DR;
+		} else if (RXNE_value == 0) {
+			HAL_GPIO_WritePin(LED15_GPIO_Port, LED15_Pin, GPIO_PIN_SET);
+			//HAL_GPIO_WritePin(LED12_GPIO_Port,LED12_Pin, GPIO_PIN_RESET);
+			//HAL_GPIO_WritePin(LED13_GPIO_Port,LED13_Pin, GPIO_PIN_RESET);
+			//HAL_GPIO_WritePin(LED14_GPIO_Port, LED14_Pin, GPIO_PIN_RESET);
+			//HAL_Delay(100);
+		}*/
+
+		/*
+		 deneme_Tx = USART2->DR;
+		 RXNE_value = USART2->SR & USART_SR_RXNE;
+		 if (RXNE_value == 1) {
+			HAL_GPIO_WritePin(LED14_GPIO_Port, LED14_Pin, GPIO_PIN_SET);
+		}*/
 
 	}
   /* USER CODE END 3 */
@@ -214,7 +247,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 38400;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -248,10 +281,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, LED14_Pin|LED15_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, LED12_Pin|LED13_Pin|LED14_Pin|LED15_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : LED14_Pin LED15_Pin */
-  GPIO_InitStruct.Pin = LED14_Pin|LED15_Pin;
+  /*Configure GPIO pins : LED12_Pin LED13_Pin LED14_Pin LED15_Pin */
+  GPIO_InitStruct.Pin = LED12_Pin|LED13_Pin|LED14_Pin|LED15_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -264,17 +297,33 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 void USART2_IRQHandler(void) {
+
+	HAL_GPIO_WritePin(LED15_GPIO_Port, LED15_Pin, GPIO_PIN_SET);
 	uint32_t isrflags = USART2->SR;
 	uint32_t control_reg1 = USART2->CR1;
+	//HAL_GPIO_WritePin(LED14_GPIO_Port, LED14_Pin, GPIO_PIN_SET);
 
 	/* UART in mode Receiver */
 	if (((isrflags & USART_SR_RXNE) != RESET) && ((control_reg1 & USART_CR1_RXNEIE) != RESET)) {
-		rx_data = (uint8_t) USART2->DR;
-		HAL_GPIO_TogglePin(LED14_GPIO_Port,LED14_Pin);
-		return;
+		if(buffer_size<5){
+		deneme_Tx[buffer_size] =  USART2->DR;
+		//HAL_GPIO_TogglePin(LED14_GPIO_Port,LED14_Pin);
+		//time1();
+			//USART2->DR = rx_data;
+			buffer_size++;
+			return;
+		}
+		for (int i = 0; i < 5; i++) {
+			USART2->DR = deneme_Tx[i];
+			time1();
+			if (i = 14) {
+				//USART2->SR &=~(USART_SR_TXE);
+				USART2->CR1 &= ~(USART_CR1_TE);
+			}
+		}
 	}
 
-	/* UART in mode Transmitter */
+	//UART in mode Transmitter
 	if (((isrflags & USART_SR_TXE) != RESET) && ((control_reg1 & USART_CR1_TXEIE) != RESET)) {
 		USART2->DR='K';
 		HAL_GPIO_TogglePin(LED14_GPIO_Port,LED14_Pin);
@@ -284,7 +333,7 @@ void USART2_IRQHandler(void) {
 }
 
 void time1(void){
-	for (int var = 0; var < 2000; ++var) {
+	for (int var = 0; var < 50000; ++var) {
 
 	}
 }
