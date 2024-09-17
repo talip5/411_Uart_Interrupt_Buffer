@@ -51,6 +51,7 @@ UART_HandleTypeDef huart2;
 uint16_t RxBuffer[RxBufferSize];
 uint32_t data_Rx = 0;
 uint32_t rx_data = 0;
+uint32_t temp_data = 0;
 uint8_t buffer_size = 0;
 
 #define BUFFER_SIZE 256
@@ -63,9 +64,9 @@ typedef struct UART_Buffer_Type{
 volatile UART_Buffer_t UART_BufferRX;
 volatile UART_Buffer_t UART_BufferTX;
 
-static int32_t UART_is_buffer_empty(volatile UART_Buffer_t* buffer);
 
-uint32_t deneme_Tx[5];
+
+uint32_t deneme_Tx[10];
 uint8_t RXNE_value = 0;
 
 /* USER CODE END PV */
@@ -124,17 +125,31 @@ int main(void)
 
    /* 5 - Enable UART Interrupt in NVIC */
 
-	HAL_NVIC_SetPriority(USART2_IRQn,15 , 15);
+	HAL_NVIC_SetPriority(USART2_IRQn, 15, 15);
 	HAL_NVIC_EnableIRQ(USART2_IRQn);
 
-	 /* USER CODE END 2 */
+	/* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
 	while (1) {
-    /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
+		HAL_GPIO_TogglePin(LED12_GPIO_Port, LED12_Pin);
+		HAL_Delay(1000);
+
+		/* USER CODE END WHILE */
+
+		/* USER CODE BEGIN 3 */
+		//deneme_Tx = USART2->DR;
+		/*RXNE_value = USART2->SR & USART_SR_RXNE;
+		 if (RXNE_value == 32) {
+		 HAL_GPIO_TogglePin(LED13_GPIO_Port, LED13_Pin);
+		 time1();
+		 }*/
+		while (USART2->SR & USART_SR_RXNE) {
+			HAL_GPIO_TogglePin(LED13_GPIO_Port, LED13_Pin);
+			time1();
+		}
 		//HAL_GPIO_TogglePin(LED13_GPIO_Port,LED13_Pin);
 		/*HAL_GPIO_WritePin(LED15_GPIO_Port, LED15_Pin, GPIO_PIN_SET);
 		 HAL_Delay(500);
@@ -174,14 +189,6 @@ int main(void)
 			//HAL_GPIO_WritePin(LED14_GPIO_Port, LED14_Pin, GPIO_PIN_RESET);
 			//HAL_Delay(100);
 		}*/
-
-		/*
-		 deneme_Tx = USART2->DR;
-		 RXNE_value = USART2->SR & USART_SR_RXNE;
-		 if (RXNE_value == 1) {
-			HAL_GPIO_WritePin(LED14_GPIO_Port, LED14_Pin, GPIO_PIN_SET);
-		}*/
-
 	}
   /* USER CODE END 3 */
 }
@@ -298,115 +305,52 @@ static void MX_GPIO_Init(void)
 
 void USART2_IRQHandler(void) {
 
-	HAL_GPIO_WritePin(LED15_GPIO_Port, LED15_Pin, GPIO_PIN_SET);
 	uint32_t isrflags = USART2->SR;
 	uint32_t control_reg1 = USART2->CR1;
-	//HAL_GPIO_WritePin(LED14_GPIO_Port, LED14_Pin, GPIO_PIN_SET);
 
 	/* UART in mode Receiver */
-	if (((isrflags & USART_SR_RXNE) != RESET) && ((control_reg1 & USART_CR1_RXNEIE) != RESET)) {
-		if(buffer_size<5){
-		deneme_Tx[buffer_size] =  USART2->DR;
-		//HAL_GPIO_TogglePin(LED14_GPIO_Port,LED14_Pin);
-		//time1();
-			//USART2->DR = rx_data;
+	if (((isrflags & USART_SR_RXNE) != RESET)
+			&& ((control_reg1 & USART_CR1_RXNEIE) != RESET)) {
+		if (buffer_size < 3) {
+			time1();
+			deneme_Tx[buffer_size] = USART2->DR;
+			HAL_GPIO_TogglePin(LED14_GPIO_Port, LED14_Pin);
+
 			buffer_size++;
 			return;
+		} else {
+			HAL_GPIO_TogglePin(LED15_GPIO_Port, LED15_Pin);
+			SET_BIT(USART2->CR1, USART_CR1_TXEIE);
+			time2();
+			//temp_data = USART2->DR;
+			USART2->SR &= ~(USART_SR_RXNE);
+			return;
 		}
-		for (int i = 0; i < 5; i++) {
-			USART2->DR = deneme_Tx[i];
-			time1();
-			if (i = 14) {
-				//USART2->SR &=~(USART_SR_TXE);
-				USART2->CR1 &= ~(USART_CR1_TE);
-			}
-		}
-	}
 
+	}
 	//UART in mode Transmitter
-	if (((isrflags & USART_SR_TXE) != RESET) && ((control_reg1 & USART_CR1_TXEIE) != RESET)) {
-		USART2->DR='K';
-		HAL_GPIO_TogglePin(LED14_GPIO_Port,LED14_Pin);
+	if (((isrflags & USART_SR_TXE) != RESET)
+			&& ((control_reg1 & USART_CR1_TXEIE) != RESET)) {
+		USART2->DR = 'K';
+		HAL_GPIO_TogglePin(LED14_GPIO_Port, LED14_Pin);
+		USART2->CR1 &=~(USART_CR1_TXEIE);
+		time1();
+		USART2->SR |=(USART_SR_RXNE);
+		buffer_size = 0;
 		time1();
 		return;
 	}
 }
 
-void time1(void){
+void time1(void) {
 	for (int var = 0; var < 50000; ++var) {
 
 	}
 }
 
+void time2(void) {
+	for (int var = 0; var < 5000000; ++var) {
 
-void UART_send_byte(uint8_t data)
-{
-	UART_BufferTX.buffer[UART_BufferTX.head_pointer++] = data;
-	if(UART_BufferTX.head_pointer == BUFFER_SIZE)
-	{
-		UART_BufferTX.head_pointer = 0;
-	}
-  /* Enable the UART Transmit Data Register Empty Interrupt */
- SET_BIT(USART2->CR1, USART_CR1_TXEIE);
-}
-
-int32_t UART_is_buffer_empty(volatile UART_Buffer_t* buffer)
-{
-	return (buffer->head_pointer == buffer->tail_pointer?1:0);
-/*
-	if(buffer->head_pointer == buffer->tail_pointer)
-	{
-		return 1; // buffer is empty
-	}
-	else
-	{
-		 return 0;
-	}
-*/
-}
-
-int32_t UART_read_byte()
-{
-	int kar =  0;
-
-	if(UART_is_buffer_empty(&UART_BufferRX) == 1 )
-	{
-		kar = -1;
-	}
-	else
-	{
-		kar = UART_BufferRX.buffer[UART_BufferRX.tail_pointer++];
-
-		if ( UART_BufferRX.tail_pointer == BUFFER_SIZE)
-		{
-			UART_BufferRX.tail_pointer = 0;
-		}
-	}
-
-	return kar;
-}
-
-
-
-void UART_send_byte_array(uint8_t* buffer, uint32_t size)
-{
-	int i;
-
-	for( i=0; i<size; i++)
-	{
-		UART_send_byte(buffer[i]);
-	}
-}
-
-uint32_t UART_bytes_to_read(void)
-{
-	if (UART_BufferRX.head_pointer >= UART_BufferRX.tail_pointer)
-	{
-		return UART_BufferRX.head_pointer - UART_BufferRX.tail_pointer;
-	}
-	else
-	{
-		return (BUFFER_SIZE + UART_BufferRX.head_pointer - UART_BufferRX.tail_pointer);
 	}
 }
 
