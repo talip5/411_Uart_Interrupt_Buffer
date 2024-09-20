@@ -311,7 +311,7 @@ void USART2_IRQHandler(void) {
 	/* UART in mode Receiver */
 	if (((isrflags & USART_SR_RXNE) != RESET)
 			&& ((control_reg1 & USART_CR1_RXNEIE) != RESET)) {
-		if (buffer_size < 3) {
+		if (buffer_size <= 3) {
 			time1();
 			deneme_Tx[buffer_size] = USART2->DR;
 			HAL_GPIO_TogglePin(LED14_GPIO_Port, LED14_Pin);
@@ -331,7 +331,11 @@ void USART2_IRQHandler(void) {
 	//UART in mode Transmitter
 	if (((isrflags & USART_SR_TXE) != RESET)
 			&& ((control_reg1 & USART_CR1_TXEIE) != RESET)) {
-		USART2->DR = 'K';
+		//USART2->DR = 'K';
+		for(int i=0; i<=3; i++){
+			USART2->DR=deneme_Tx[i];
+			time1();
+		}
 		HAL_GPIO_TogglePin(LED14_GPIO_Port, LED14_Pin);
 		USART2->CR1 &=~(USART_CR1_TXEIE);
 		time1();
